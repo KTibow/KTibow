@@ -1,4 +1,5 @@
 ### Hi there 👋
+Note that my behavior a couple of years ago is **SEVERELY different** from my behavior now.
 
 <!--
 **KTibow/KTibow** is a ✨ _special_ ✨ repository because its `README.md` (this file) appears on your GitHub profile.

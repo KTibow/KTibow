@@ -1,5 +1,6 @@
 # EHLO!
-yet another developer. [website](https://ktibow.github.io)
+yet another developer.
+
 ## contact
 - you can mention me on github
 - you can talk to me on discord, `ktibow`

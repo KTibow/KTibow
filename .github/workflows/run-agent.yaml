@@ -1,0 +1,33 @@
+name: Run Agent
+
+on:
+  workflow_dispatch:
+    inputs:
+      prompt:
+        description: Prompt to run with Pi
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  run-agent:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 24
+
+      - name: Install Pi
+        run: npm install -g @mariozechner/pi-coding-agent
+
+      - name: Run Pi
+        env:
+          PALANTIR_API_KEY: ${{ secrets.PALANTIR_API_KEY }}
+          PI_SKIP_VERSION_CHECK: 1
+          PI_TELEMETRY: 0
+          PROMPT: ${{ inputs.prompt }}
+        run: pi --no-session -p "$PROMPT"

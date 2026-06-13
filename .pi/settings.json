@@ -1,0 +1,13 @@
+{
+  "defaultProvider": "palantir",
+  "defaultModel": "ri.language-model-service..language-model.gpt-5-5",
+  "retry": {
+    "enabled": true,
+    "maxRetries": 10,
+    "baseDelayMs": 65000,
+    "provider": {
+      "maxRetries": 10,
+      "maxRetryDelayMs": 0
+    }
+  }
+}

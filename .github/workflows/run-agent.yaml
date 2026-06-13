@@ -7,6 +7,14 @@ on:
         description: Prompt to run with Pi
         required: true
         type: string
+      target_owner:
+        description: Owner to mint the GitHub App token for
+        required: false
+        type: string
+      target_repository:
+        description: Repository to mint the GitHub App token for
+        required: false
+        type: string
 
 permissions:
   contents: read
@@ -30,7 +38,8 @@ jobs:
         with:
           app-id: 4042273
           private-key: ${{ secrets.APP_PRIVATE_KEY }}
-          owner: ${{ github.repository_owner }}
+          owner: ${{ inputs.target_owner || github.repository_owner }}
+          repositories: ${{ inputs.target_repository || github.event.repository.name }}
 
       - name: Run Pi
         env:

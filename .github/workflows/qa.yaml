@@ -6,6 +6,7 @@ on:
     - cron: "13 10 * * *"
 
 permissions:
+  actions: write
   contents: read
 
 jobs:
@@ -14,32 +15,10 @@ jobs:
     steps:
       - name: Dispatch recent repository scans
         env:
-          APP_ID: 4042273
-          APP_PRIVATE_KEY: ${{ secrets.APP_PRIVATE_KEY }}
           DISCOVERY_TOKEN: ${{ github.token }}
           USERNAME: ${{ github.repository_owner }}
         run: |
           set -euo pipefail
-
-          app_jwt=$(
-            ruby <<'RUBY'
-          require 'base64'
-          require 'json'
-          require 'openssl'
-
-          def b64(data)
-            Base64.urlsafe_encode64(data).delete('=')
-          end
-
-          now = Time.now.to_i
-          header = { alg: 'RS256', typ: 'JWT' }
-          payload = { iat: now - 60, exp: now + 540, iss: ENV.fetch('APP_ID') }
-          signing_input = [b64(header.to_json), b64(payload.to_json)].join('.')
-          key = OpenSSL::PKey.read(ENV.fetch('APP_PRIVATE_KEY'))
-          signature = key.sign(OpenSSL::Digest::SHA256.new, signing_input)
-          puts [signing_input, b64(signature)].join('.')
-          RUBY
-          )
 
           cutoff=$(date -u -d '24 hours ago' +%s)
           events=$(mktemp)
@@ -79,15 +58,8 @@ jobs:
             base=$(jq -r '.old' <<< "$dispatch")
             head=$(jq -r '.new' <<< "$dispatch")
             commits=$(jq -r '.commits' <<< "$dispatch")
-
-            installation_id=$(GH_TOKEN="$DISCOVERY_TOKEN" gh api -H "Authorization: Bearer ${app_jwt}" "/repos/${repo}/installation" --jq '.id' 2>/dev/null || true)
-            if [ -z "$installation_id" ]; then
-              echo "::warning::Skipping ${repo}; the GitHub App is not installed there"
-              continue
-            fi
-
-            installation_token=$(GH_TOKEN="$DISCOVERY_TOKEN" gh api -H "Authorization: Bearer ${app_jwt}" --method POST "/app/installations/${installation_id}/access_tokens" --jq '.token')
-            default_branch=$(GH_TOKEN="$installation_token" gh api "repos/${repo}" --jq '.default_branch')
+            target_owner=${repo%%/*}
+            target_repository=${repo#*/}
 
             prompt=$(cat <<PROMPT
           Autonomously review ${repo} for high-confidence bugs introduced by ${USERNAME}'s public pushed changes in ${base}...${head} (${commits} commits) on ${ref}.
@@ -101,7 +73,7 @@ jobs:
           )
 
             echo "Dispatching scan for ${repo} ${base}...${head}"
-            if ! GH_TOKEN="$installation_token" gh workflow run run-agent.yaml --repo "$repo" --ref "$default_branch" --field prompt="$prompt"; then
-              echo "::warning::Failed to dispatch run-agent.yaml for ${repo} on ${default_branch}"
+            if ! GH_TOKEN="$DISCOVERY_TOKEN" gh workflow run run-agent.yaml --repo "$GITHUB_REPOSITORY" --ref "$GITHUB_REF_NAME" --field prompt="$prompt" --field target_owner="$target_owner" --field target_repository="$target_repository"; then
+              echo "::warning::Failed to dispatch hub run-agent.yaml for ${repo}"
             fi
           done < "$dispatches"

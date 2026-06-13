@@ -2,7 +2,7 @@
   "providers": {
     "palantir": {
       "baseUrl": "https://kendell.usw-18.palantirfoundry.com/api/v2/llm/proxy/openai/v1",
-      "api": "openai-completions",
+      "api": "openai-responses",
       "apiKey": "$PALANTIR_API_KEY",
       "models": [
         {
@@ -16,7 +16,8 @@
           "contextWindow": 200000,
           "maxTokens": 128000,
           "compat": {
-            "supportsUsageInStreaming": false
+            "supportsDeveloperRole": false,
+            "supportsLongCacheRetention": false
           }
         }
       ]

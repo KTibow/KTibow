@@ -39,7 +39,11 @@ jobs:
                     ref: .[0].payload.ref,
                     old: (.[0].payload.before),
                     new: (last.payload.head),
-                    commits: (map(.payload.commits | length) | add)
+                    pushes: map({
+                      created_at,
+                      before: .payload.before,
+                      head: .payload.head
+                    })
                   }
               )
             | map(select(.old | test("^0+$") | not))
@@ -57,12 +61,20 @@ jobs:
             ref=$(jq -r '.ref' <<< "$dispatch")
             base=$(jq -r '.old' <<< "$dispatch")
             head=$(jq -r '.new' <<< "$dispatch")
-            commits=$(jq -r '.commits' <<< "$dispatch")
             target_owner=${repo%%/*}
             target_repository=${repo#*/}
+            push_events=$(jq -r '
+              .pushes as $pushes
+              | ($pushes | length) as $count
+              | ($pushes[:20] | map("- " + .created_at + ": " + (.before[:12]) + "..." + (.head[:12])) | join("\n"))
+                + if $count > 20 then "\n- ... " + (($count - 20) | tostring) + " more push events omitted" else "" end
+            ' <<< "$dispatch")
 
             prompt=$(cat <<PROMPT
-          Autonomously review ${repo} for high-confidence bugs introduced by ${USERNAME}'s public pushed changes in ${base}...${head} (${commits} commits) on ${ref}.
+          Autonomously review ${repo} for high-confidence bugs introduced by ${USERNAME}'s public pushed changes in ${base}...${head} on ${ref}.
+
+          Push events in this aggregated range:
+          ${push_events}
 
           This run starts outside the target repository. Clone ${repo}, inspect the compare range and relevant surrounding code, install dependencies or run targeted checks when useful, and use subagents if they help. Use GH_TOKEN with the gh CLI for GitHub operations.
 

@@ -22,11 +22,12 @@ jobs:
           node-version: 24
 
       - name: Install Pi
-        run: npm install -g @mariozechner/pi-coding-agent
+        run: npm install -g @earendil-works/pi-coding-agent
 
       - name: Run Pi
         env:
           PALANTIR_API_KEY: ${{ secrets.PALANTIR_API_KEY }}
+          PI_CODING_AGENT_DIR: ${{ github.workspace }}/.pi
           PI_SKIP_VERSION_CHECK: 1
           PI_TELEMETRY: 0
           PROMPT: ${{ inputs.prompt }}

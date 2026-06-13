@@ -1,0 +1,107 @@
+name: QA
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "13 10 * * *"
+
+permissions:
+  contents: read
+
+jobs:
+  dispatch-repository-scans:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Dispatch recent repository scans
+        env:
+          APP_ID: 4042273
+          APP_PRIVATE_KEY: ${{ secrets.APP_PRIVATE_KEY }}
+          DISCOVERY_TOKEN: ${{ github.token }}
+          USERNAME: ${{ github.repository_owner }}
+        run: |
+          set -euo pipefail
+
+          app_jwt=$(
+            ruby <<'RUBY'
+          require 'base64'
+          require 'json'
+          require 'openssl'
+
+          def b64(data)
+            Base64.urlsafe_encode64(data).delete('=')
+          end
+
+          now = Time.now.to_i
+          header = { alg: 'RS256', typ: 'JWT' }
+          payload = { iat: now - 60, exp: now + 540, iss: ENV.fetch('APP_ID') }
+          signing_input = [b64(header.to_json), b64(payload.to_json)].join('.')
+          key = OpenSSL::PKey.read(ENV.fetch('APP_PRIVATE_KEY'))
+          signature = key.sign(OpenSSL::Digest::SHA256.new, signing_input)
+          puts [signing_input, b64(signature)].join('.')
+          RUBY
+          )
+
+          cutoff=$(date -u -d '24 hours ago' +%s)
+          events=$(mktemp)
+          dispatches=$(mktemp)
+
+          GH_TOKEN="$DISCOVERY_TOKEN" gh api --paginate --slurp "/users/${USERNAME}/events/public" > "$events"
+
+          jq -r --argjson cutoff "$cutoff" '
+            flatten
+            | map(select(.type == "PushEvent"))
+            | map(select(.payload.ref | startswith("refs/heads/")))
+            | map(select((.created_at | fromdateiso8601) > $cutoff))
+            | group_by(.repo.name + "\u0000" + .payload.ref)
+            | map(
+                sort_by(.created_at)
+                | {
+                    repo: .[0].repo.name,
+                    ref: .[0].payload.ref,
+                    old: (.[0].payload.before),
+                    new: (last.payload.head),
+                    commits: (map(.payload.commits | length) | add)
+                  }
+              )
+            | map(select(.old | test("^0+$") | not))
+            | .[]
+            | @json
+          ' "$events" > "$dispatches"
+
+          if ! [ -s "$dispatches" ]; then
+            echo "No recent push events to scan."
+            exit 0
+          fi
+
+          while IFS= read -r dispatch; do
+            repo=$(jq -r '.repo' <<< "$dispatch")
+            ref=$(jq -r '.ref' <<< "$dispatch")
+            base=$(jq -r '.old' <<< "$dispatch")
+            head=$(jq -r '.new' <<< "$dispatch")
+            commits=$(jq -r '.commits' <<< "$dispatch")
+
+            installation_id=$(GH_TOKEN="$DISCOVERY_TOKEN" gh api -H "Authorization: Bearer ${app_jwt}" "/repos/${repo}/installation" --jq '.id' 2>/dev/null || true)
+            if [ -z "$installation_id" ]; then
+              echo "::warning::Skipping ${repo}; the GitHub App is not installed there"
+              continue
+            fi
+
+            installation_token=$(GH_TOKEN="$DISCOVERY_TOKEN" gh api -H "Authorization: Bearer ${app_jwt}" --method POST "/app/installations/${installation_id}/access_tokens" --jq '.token')
+            default_branch=$(GH_TOKEN="$installation_token" gh api "repos/${repo}" --jq '.default_branch')
+
+            prompt=$(cat <<PROMPT
+          Autonomously review ${repo} for high-confidence bugs introduced by ${USERNAME}'s public pushed changes in ${base}...${head} (${commits} commits) on ${ref}.
+
+          This run starts outside the target repository. Clone ${repo}, inspect the compare range and relevant surrounding code, install dependencies or run targeted checks when useful, and use subagents if they help. Use GH_TOKEN with the gh CLI for GitHub operations.
+
+          Goal: leave GitHub commit comments on ${head} for real bugs introduced in this range. If there are no high-confidence bugs, leave no comments and finish successfully.
+
+          Only report provable mechanical or logical breakage or leakage in normal execution flow. Do not comment on style, maintainability, hypothetical risks, missing validation/error handling, generated or lockfile noise, or anything below about 90% confidence. Do not open issues, pull requests, or code changes.
+          PROMPT
+          )
+
+            echo "Dispatching scan for ${repo} ${base}...${head}"
+            if ! GH_TOKEN="$installation_token" gh workflow run run-agent.yaml --repo "$repo" --ref "$default_branch" --field prompt="$prompt"; then
+              echo "::warning::Failed to dispatch run-agent.yaml for ${repo} on ${default_branch}"
+            fi
+          done < "$dispatches"

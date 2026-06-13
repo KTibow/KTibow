@@ -78,7 +78,7 @@ jobs:
 
           This run starts outside the target repository. Clone ${repo}, inspect the compare range and relevant surrounding code, install dependencies or run targeted checks when useful, and use subagents if they help. Use GH_TOKEN with the gh CLI for GitHub operations.
 
-          Goal: leave GitHub commit comments on ${head} for real bugs introduced in this range. If there are no high-confidence bugs, leave no comments and finish successfully.
+          Goal: leave GitHub commit comments on the specific commit and changed location that introduced each real bug. If there are no high-confidence bugs, leave no comments and finish successfully.
 
           Only report provable mechanical or logical breakage or leakage in normal execution flow. Do not comment on style, maintainability, hypothetical risks, missing validation/error handling, generated or lockfile noise, or anything below about 90% confidence. Do not open issues, pull requests, or code changes.
           PROMPT

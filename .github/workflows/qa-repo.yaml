@@ -1,0 +1,45 @@
+name: QA Repo
+
+on:
+  workflow_dispatch:
+    inputs:
+      repo:
+        description: Repository to QA, as owner/repo
+        required: true
+        type: string
+
+permissions:
+  actions: write
+  contents: read
+
+jobs:
+  dispatch-repo-qa:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Dispatch repository QA
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ inputs.repo }}
+        run: |
+          set -euo pipefail
+
+          if [[ "$REPO" != */* ]]; then
+            echo "::error::repo must be formatted as owner/repo"
+            exit 1
+          fi
+
+          target_owner=${REPO%%/*}
+          target_repository=${REPO#*/}
+
+          prompt=$(cat <<PROMPT
+          Autonomously QA the existing code in ${REPO} for high-confidence bugs.
+
+          This run starts outside the target repository. Clone ${REPO}, inspect the current default branch and relevant repository context, install dependencies or run targeted checks when useful, and use subagents if they help. Use GH_TOKEN with the gh CLI for GitHub operations.
+
+          Goal: if you find high-confidence bugs, create exactly one GitHub issue in ${REPO} containing all findings. Include enough detail for a maintainer to act: affected files/locations, why each bug is real, expected vs actual behavior, verification steps attempted, and any relevant command output. If you find no high-confidence bugs, create no issue and finish successfully.
+
+          Only report provable mechanical or logical breakage or leakage in normal execution flow. Do not report style, maintainability, hypothetical risks, missing validation/error handling, generated or lockfile noise, or anything below about 90% confidence. Do not open pull requests, make code changes, or leave commit comments.
+          PROMPT
+          )
+
+          gh workflow run run-agent.yaml --repo "$GITHUB_REPOSITORY" --ref "$GITHUB_REF_NAME" --field prompt="$prompt" --field target_owner="$target_owner" --field target_repository="$target_repository"

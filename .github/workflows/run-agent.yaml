@@ -30,6 +30,7 @@ jobs:
         with:
           app-id: 4042273
           private-key: ${{ secrets.APP_PRIVATE_KEY }}
+          owner: ${{ github.repository_owner }}
 
       - name: Run Pi
         env:

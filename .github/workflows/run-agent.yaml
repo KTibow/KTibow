@@ -26,6 +26,7 @@ jobs:
 
       - name: Run Pi
         env:
+          GH_TOKEN: ${{ secrets.AGENT_PAT }}
           PALANTIR_API_KEY: ${{ secrets.PALANTIR_API_KEY }}
           PI_CODING_AGENT_DIR: ${{ github.workspace }}/.pi
           PI_SKIP_VERSION_CHECK: 1

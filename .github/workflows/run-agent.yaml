@@ -24,9 +24,16 @@ jobs:
       - name: Install Pi
         run: npm install -g @earendil-works/pi-coding-agent
 
+      - name: Generate GitHub App token
+        id: app-token
+        uses: actions/create-github-app-token@v2
+        with:
+          app-id: 4042273
+          private-key: ${{ secrets.APP_PRIVATE_KEY }}
+
       - name: Run Pi
         env:
-          GH_TOKEN: ${{ secrets.AGENT_PAT }}
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
           PALANTIR_API_KEY: ${{ secrets.PALANTIR_API_KEY }}
           PI_CODING_AGENT_DIR: ${{ github.workspace }}/.pi
           PI_SKIP_VERSION_CHECK: 1

@@ -41,6 +41,9 @@ jobs:
           owner: ${{ inputs.target_owner || github.repository_owner }}
           repositories: ${{ inputs.target_repository || github.event.repository.name }}
 
+      - name: Expose GitHub Actions runtime
+        uses: crazy-max/ghaction-github-runtime@v3
+
       - name: Run Pi
         env:
           GH_TOKEN: ${{ steps.app-token.outputs.token }}

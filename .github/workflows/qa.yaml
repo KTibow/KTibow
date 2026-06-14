@@ -77,7 +77,7 @@ jobs:
           Push events in this aggregated range:
           ${push_events}
 
-          This run starts outside the target repository. Clone ${repo}, inspect the compare range and relevant surrounding code, install dependencies or run targeted checks when useful, and use subagents if they help. Use GH_TOKEN with the gh CLI for GitHub operations.
+          This run starts outside the target repository. Clone ${repo} and inspect the compare range and relevant surrounding code. You're completely free to install dependencies or tools (this is an ephemeral GitHub Actions runner), look up documentation (many things have changed since your knowledge cutoff), make bespoke checks to get evidence, use subagents, or use the gh cli with GH_TOKEN.
 
           Goal: leave GitHub commit comments on the specific commit and changed location that introduced each real bug. If there are no high-confidence bugs, leave no comments and finish successfully.
 

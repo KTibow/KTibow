@@ -34,7 +34,7 @@ jobs:
           prompt=$(cat <<PROMPT
           Autonomously QA the existing code in ${REPO} for high-confidence bugs.
 
-          This run starts outside the target repository. Clone ${REPO}, inspect the current default branch and relevant repository context, install dependencies or run targeted checks when useful, and use subagents if they help. Use GH_TOKEN with the gh CLI for GitHub operations.
+          This run starts outside the target repository. Clone ${REPO} and inspect the current default branch and relevant repository context. You're completely free to install dependencies or tools (this is an ephemeral GitHub Actions runner), look up documentation (many things have changed since your knowledge cutoff), make bespoke checks or fuzzers to get evidence, use subagents, or use the gh cli with GH_TOKEN.
 
           Goal: if you find high-confidence bugs, create exactly one GitHub issue in ${REPO} containing all findings. Include enough detail for a maintainer to act: affected files/locations, why each bug is real, expected vs actual behavior, verification steps attempted, and any relevant command output. If you find no high-confidence bugs, create no issue and finish successfully.
 

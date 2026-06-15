@@ -3,7 +3,7 @@ name: QA
 on:
   workflow_dispatch:
   schedule:
-    - cron: "0 18 * * *"
+    - cron: "55 17 * * *"
       timezone: "America/Los_Angeles"
 
 permissions:

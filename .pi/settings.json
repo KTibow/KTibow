@@ -1,6 +1,6 @@
 {
   "defaultProvider": "palantir",
-  "defaultModel": "ri.language-model-service..language-model.gpt-5-5",
+  "defaultModel": "gpt-5.5",
   "retry": {
     "enabled": true,
     "maxRetries": 10,

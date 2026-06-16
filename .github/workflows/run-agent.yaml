@@ -15,6 +15,10 @@ on:
         description: Repository to mint the GitHub App token for
         required: false
         type: string
+      model:
+        description: Model to run with Pi, for example gpt-5.5 or palantir/gpt-5.5
+        required: false
+        type: string
 
 permissions:
   contents: read
@@ -51,5 +55,13 @@ jobs:
           PI_CODING_AGENT_DIR: ${{ github.workspace }}/.pi
           PI_SKIP_VERSION_CHECK: 1
           PI_TELEMETRY: 0
+          MODEL: ${{ inputs.model }}
           PROMPT: ${{ inputs.prompt }}
-        run: pi --no-session -p "$PROMPT"
+        run: |
+          args=(--no-session)
+
+          if [[ -n "$MODEL" ]]; then
+            args+=(--model "$MODEL")
+          fi
+
+          pi "${args[@]}" -p "$PROMPT"

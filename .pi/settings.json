@@ -1,6 +1,6 @@
 {
-  "defaultProvider": "palantir",
-  "defaultModel": "gpt-5.5",
+  "defaultProvider": "crofai",
+  "defaultModel": "glm-5.2",
   "retry": {
     "enabled": true,
     "maxRetries": 10,

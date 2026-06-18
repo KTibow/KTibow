@@ -16,7 +16,7 @@ on:
         required: false
         type: string
       model:
-        description: Model to run with Pi, for example gpt-5.5 or palantir/gpt-5.5
+        description: Model to run with Pi
         required: false
         type: string
 

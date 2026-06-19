@@ -52,6 +52,7 @@ jobs:
         env:
           GH_TOKEN: ${{ steps.app-token.outputs.token }}
           PALANTIR_API_KEY: ${{ secrets.PALANTIR_API_KEY }}
+          CROFAI_API_KEY: ${{ secrets.CROFAI_API_KEY }}
           PI_CODING_AGENT_DIR: ${{ github.workspace }}/.pi
           PI_SKIP_VERSION_CHECK: 1
           PI_TELEMETRY: 0
